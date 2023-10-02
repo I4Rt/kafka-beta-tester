@@ -1,5 +1,5 @@
 from kafka import KafkaProducer
-from faker import Faker
+# from faker import Faker
 import json
 import time
 import cv2
@@ -53,10 +53,11 @@ def json_serializer(data):
 producer = KafkaProducerPlus(["localhost:9092"], topic="SO1_local",
                              value_serializer=json_serializer)
 
-img = cv2.imread("image.jpg")
+
 
 
 if __name__ == "__main__":
+    img = cv2.imread("image.jpg")
     while True:
         # registered_user = get_registered_user()
         # print(registered_user)

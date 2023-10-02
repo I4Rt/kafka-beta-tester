@@ -25,9 +25,9 @@ def checkIfInside(border, target):
     """Checking if point in polygon or not."""
     return Polygon(border).contains(Point(target[0], target[1]))
 
-def recognition(sectors, taskID):
+def recognition(image, sectors, taskID):
     """Recognition image and send the counter."""
-    image = cv2.imread("queue/image_receive.jpg")
+    #image = cv2.imread("queue/image_receive.jpg")
 
     results = model.predict(source=image, imgsz=1920, conf=0.25, classes=[0])
     decImg_h, decImg_w = image.shape[:2]
@@ -105,6 +105,6 @@ if __name__ == "__main__":
                     npImg = frombuffer(readImgBytes, 'u1')
                     decImg = cv2.imdecode(npImg, 1)
                     cv2.imwrite("queue/image_receive.jpg", decImg)
-                    recognition(key_data["sectors"], json.loads(msg.value)["taskID"])
+                    recognition(decImg, key_data["sectors"], json.loads(msg.value)["taskID"])
                     print("Sending")
 #        print("Registered User = {}".format(json.loads(msg.value)))
