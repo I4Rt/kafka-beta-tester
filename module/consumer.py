@@ -25,38 +25,42 @@ def checkIfInside(border, target):
     """Checking if point in polygon or not."""
     return Polygon(border).contains(Point(target[0], target[1]))
 
-def recognition(image, sectors, taskID):
+def recognition(image, sectors, taskID, mode = 1):
     """Recognition image and send the counter."""
     #image = cv2.imread("queue/image_receive.jpg")
 
-    results = model.predict(source=image, imgsz=1920, conf=0.25, classes=[0])
+    results = model.predict(source=image, imgsz=1920, conf=0.6, classes=[0])
     decImg_h, decImg_w = image.shape[:2]
 
     #coords = {"coordinates": [[3.6, 50.4], [6.1, 95.1], [85.2, 96.1], [85.0, 96.1], [90.2, 86.3], [89.3, 37.2]]}
     counter = 0
-    for sector in sectors:
-        # if sector["mode"] == 1
-        border = []
-        print("len", len(sector["points"]))
-        if len(sector["points"]) != 0:
-            for coord in sector["points"]:
-                border.append((round(coord[0] * decImg_w / 100), round(coord[1] * decImg_h / 100)))
-            border.append(border[0])
-        else:
-            border.append([0, 0])
-            border.append([decImg_w, 0])
-            border.append([decImg_w, decImg_h])
-            border.append([0, decImg_h])
+    if mode == 1:
+        for sector in sectors:
+            # if sector["mode"] == 1
+            border = []
+            print("len", len(sector["points"]))
+            if len(sector["points"]) != 0:
+                for coord in sector["points"]:
+                    border.append((round(coord[0] * decImg_w / 100), round(coord[1] * decImg_h / 100)))
+                border.append(border[0])
+            else:
+                border.append([0, 0])
+                border.append([decImg_w, 0])
+                border.append([decImg_w, decImg_h])
+                border.append([0, decImg_h])             # bad coordinates
 
-        # Check our person in polygon it or not
-        boxes = results[0].boxes
-        for box in boxes:
-            if checkIfInside(border, (box.xyxy[0][0].item(), box.xyxy[0][3].item())) and \
-                    checkIfInside(border, (box.xyxy[0][2].item(), box.xyxy[0][3].item())):
-                counter += 1
-
-    producer.sendMessage({"taskID":  taskID, "counter": counter, "datetime": str(datetime.datetime.now())})
-
+            # Check our person in polygon it or not
+            boxes = results[0].boxes
+            for box in boxes:
+                if checkIfInside(border, (box.xyxy[0][0].item(), box.xyxy[0][3].item())) and \
+                        checkIfInside(border, (box.xyxy[0][2].item(), box.xyxy[0][3].item())):
+                    counter += 1
+    elif mode == 2:
+        counter = len(results[0].boxes)
+    else: 
+        counter = len(results[0].boxes)
+    data = producer.sendMessage({"taskID":  taskID, "counter": counter, "datetime": str(datetime.datetime.now())})
+    # print(data)
     return
 
 
@@ -96,6 +100,7 @@ if __name__ == "__main__":
     print("starting the consumer ImageReceiver")
 
     for msg in consumer.consumer:
+        print('recieved')
         for key_main in json.loads(msg.value):
             print("key_main", key_main)
             if key_main == "data":
@@ -105,6 +110,10 @@ if __name__ == "__main__":
                     npImg = frombuffer(readImgBytes, 'u1')
                     decImg = cv2.imdecode(npImg, 1)
                     cv2.imwrite("queue/image_receive.jpg", decImg)
-                    recognition(decImg, key_data["sectors"], json.loads(msg.value)["taskID"])
+                    try:
+                        print(list( json.loads(msg.value).keys()) )
+                        recognition(decImg, key_data["sectors"], json.loads(msg.value)["taskId"], key_data['mode'])
+                    except Exception as e:
+                        print(e)
                     print("Sending")
 #        print("Registered User = {}".format(json.loads(msg.value)))

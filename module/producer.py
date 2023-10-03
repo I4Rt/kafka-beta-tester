@@ -18,7 +18,7 @@ class KafkaProducerPlus:
                                       value_serializer=value_serializer)
 
     def sendMessage(self, message):
-        self.producer.send(self.topic, message)
+        return self.producer.send(self.topic, message)
 
 
     # def sendImage(self, image):
